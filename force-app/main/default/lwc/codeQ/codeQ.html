@@ -1,0 +1,31 @@
+<template>
+    <lightning-card title="Create Fields">
+        <lightning-layout multiple-rows>
+            <lightning-layout-item size="12" padding="around-small">
+                <lightning-input type="text" label="Field API Name" value={apiName} onchange={handleApiNameChange}></lightning-input>
+            </lightning-layout-item>
+            <lightning-layout-item size="12" padding="around-small">
+                <lightning-input type="text" label="Field Label" value={label} onchange={handleLabelChange}></lightning-input>
+            </lightning-layout-item>
+            <lightning-layout-item size="12" padding="around-small">
+                <lightning-combobox label="Field Type" value={fieldType} options={fieldTypeOptions} onchange={handleFieldTypeChange}></lightning-combobox>
+            </lightning-layout-item>
+            <lightning-layout-item size="12" padding="around-small">
+                <lightning-input type="checkbox" label="Create multiple fields?" checked={createMultipleFields} onchange={handleCreateMultipleFieldsChange}></lightning-input>
+            </lightning-layout-item>
+            <template if:true={createMultipleFields}>
+                <lightning-layout-item size="12" padding="around-small">
+                    <lightning-input type="number" label="Number of Fields to Create" value={numberOfFields} onchange={handleNumberOfFieldsChange}></lightning-input>
+                </lightning-layout-item>
+            </template>
+            <template if:false={createMultipleFields}>
+                <lightning-layout-item size="12" padding="around-small">
+                    <lightning-input type="text" label="Default Value" value={defaultValue} onchange={handleDefaultValueChange}></lightning-input>
+                </lightning-layout-item>
+            </template>
+            <lightning-layout-item size="12" padding="around-small">
+                <lightning-button variant="brand" label="Create Fields" onclick={handleCreateFields}></lightning-button>
+            </lightning-layout-item>
+        </lightning-layout>
+    </lightning-card>
+</template>
