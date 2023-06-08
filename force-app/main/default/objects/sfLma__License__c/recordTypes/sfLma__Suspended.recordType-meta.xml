@@ -3,15 +3,4 @@
     <fullName>sfLma__Suspended</fullName>
     <active>true</active>
     <label>Suspended</label>
-    <picklistValues>
-        <picklist>sfLma__Status__c</picklist>
-        <values>
-            <fullName>Active</fullName>
-            <default>false</default>
-        </values>
-        <values>
-            <fullName>Suspended</fullName>
-            <default>true</default>
-        </values>
-    </picklistValues>
 </RecordType>

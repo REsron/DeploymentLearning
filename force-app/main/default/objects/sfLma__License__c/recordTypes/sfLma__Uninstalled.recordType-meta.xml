@@ -3,11 +3,4 @@
     <fullName>sfLma__Uninstalled</fullName>
     <active>true</active>
     <label>Uninstalled</label>
-    <picklistValues>
-        <picklist>sfLma__Status__c</picklist>
-        <values>
-            <fullName>Uninstalled</fullName>
-            <default>true</default>
-        </values>
-    </picklistValues>
 </RecordType>
