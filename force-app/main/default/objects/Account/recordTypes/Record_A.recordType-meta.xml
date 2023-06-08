@@ -11,6 +11,17 @@
         </values>
     </picklistValues>
     <picklistValues>
+        <picklist>Animal__c</picklist>
+        <values>
+            <fullName>Deer</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Lion</fullName>
+            <default>false</default>
+        </values>
+    </picklistValues>
+    <picklistValues>
         <picklist>Industry</picklist>
         <values>
             <fullName>Agriculture</fullName>
