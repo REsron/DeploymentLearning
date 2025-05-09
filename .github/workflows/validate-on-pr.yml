@@ -23,11 +23,11 @@ jobs:
         run: |
           echo "${{ secrets.SF_JWT_KEY }}" > server.key
           sfdx force:auth:jwt:grant \
-            --client-id ${{ secrets.SF_CLIENT_ID }} \
-            --jwt-key-file server.key \
+            --clientid ${{ secrets.SF_CLIENT_ID }} \
+            --jwtkeyfile server.key \
             --username ${{ secrets.SF_HUB_USERNAME }} \
-            --instance-url https://login.salesforce.com \
-            --alias prod
+            --instanceurl https://login.salesforce.com \
+            --setalias prod
 
       - name: 📂 Get Changed Metadata Files
         id: changed-files
