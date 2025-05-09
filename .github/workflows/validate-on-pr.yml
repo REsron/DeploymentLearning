@@ -11,10 +11,10 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
 
     steps:
-      - name: Use Node.js 20.x
+      - name: Use Node.js 18.x
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: '18'
 
       - name: 'Checkout source code'
         uses: actions/checkout@v3
