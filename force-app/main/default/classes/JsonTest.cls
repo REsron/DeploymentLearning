@@ -15,6 +15,7 @@ public class JsonTest {
         customer.name = Name;
         customer.email = Email;
         customer.phone = Long.valueOf(Phone);
+        System.debug('customer.name '+customer.name);
 
     }
 
