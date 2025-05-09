@@ -1,0 +1,35 @@
+name: Validate on PR to Main
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install Salesforce CLI
+        run: npm install sfdx-cli --global
+
+      - name: Authenticate with Salesforce (Prod Org)
+        run: |
+          echo "${{ secrets.SF_JWT_KEY }}" > server.key
+          sfdx auth:jwt:grant \
+            --clientid ${{ secrets.SF_CLIENT_ID }} \
+            --jwtkeyfile server.key \
+            --username ${{ secrets.SF_HUB_USERNAME }} \
+            --instanceurl https://login.salesforce.com \
+            --setalias prod
+
+      - name: Validate Deployment (CheckOnly)
+        run: |
+          sfdx force:source:deploy \
+            -p force-app/main/default \
+            -u prod \
+            --checkonly \
+            --testlevel RunLocalTests \
+            --wait 30
