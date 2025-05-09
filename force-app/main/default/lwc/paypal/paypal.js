@@ -1,7 +1,7 @@
 import { LightningElement } from 'lwc';
 //import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 //import { loadScript } from '@salesforce/resource/1668107609000/paypaljs';
-import loadScript from "@salesforce/resourceUrl/paypaljs";
+//import loadScript from "@salesforce/resourceUrl/paypaljs";
 
 export default class Paypal extends LightningElement {
   paypal;
