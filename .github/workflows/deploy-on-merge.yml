@@ -1,0 +1,34 @@
+name: Deploy to Production on Merge
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install Salesforce CLI
+        run: npm install sfdx-cli --global
+
+      - name: Authenticate with Salesforce (Prod Org)
+        run: |
+          echo "${{ secrets.SF_JWT_KEY }}" > server.key
+          sfdx force:auth:jwt:grant \
+            --clientid ${{ secrets.SF_CLIENT_ID }} \
+            --jwtkeyfile server.key \
+            --username ${{ secrets.SF_HUB_USERNAME }} \
+            --instanceurl https://login.salesforce.com \
+            --setalias prod
+
+      - name: Deploy to Production
+        run: |
+          sfdx force:source:deploy \
+            -p force-app/main/default \
+            -u prod \
+            --testlevel RunLocalTests \
+            --wait 30
