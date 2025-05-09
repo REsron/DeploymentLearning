@@ -1,6 +1,0 @@
-<messaging:emailTemplate subject="Mock message, please ignore" recipientType="Contact" relatedToType="sfcma__Customer__c">
-<messaging:plainTextEmailBody >
-Congratulations!
-This is your new Visualforce Email Template.
-</messaging:plainTextEmailBody>
-</messaging:emailTemplate>

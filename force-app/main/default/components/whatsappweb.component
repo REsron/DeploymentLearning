@@ -1,3 +1,0 @@
-<apex:component >
-    <apex:iframe src="https://web.whatsapp.com/" scrolling="true" id="theIframe"/>
-</apex:component>
