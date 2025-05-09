@@ -1,4 +1,4 @@
-name: Validate on PR to Main
+name: Validate Changed Metadata on PR
 
 on:
   pull_request:
@@ -8,28 +8,71 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+
+    env:
+      SFDX_DISABLE_TELEMETRY: true
+
     steps:
-      - name: Checkout repo
+      - name: ⏬ Checkout repo
         uses: actions/checkout@v3
 
-      - name: Install Salesforce CLI
+      - name: 🛠️ Install Salesforce CLI
         run: npm install sfdx-cli --global
 
-      - name: Authenticate with Salesforce (Prod Org)
+      - name: 🔐 Authenticate with Salesforce (Prod Org)
         run: |
           echo "${{ secrets.SF_JWT_KEY }}" > server.key
           sfdx force:auth:jwt:grant \
-            --clientid ${{ secrets.SF_CLIENT_ID }} \
-            --jwtkeyfile server.key \
+            --client-id ${{ secrets.SF_CLIENT_ID }} \
+            --jwt-key-file server.key \
             --username ${{ secrets.SF_HUB_USERNAME }} \
-            --instanceurl https://login.salesforce.com \
-            --setalias prod
+            --instance-url https://login.salesforce.com \
+            --alias prod
 
-      - name: Validate Deployment (CheckOnly)
+      - name: 📂 Get Changed Metadata Files
+        id: changed-files
         run: |
+          git fetch origin main
+          CHANGED=$(git diff --name-only origin/main...HEAD | grep "^force-app/main/default/" || true)
+          echo "$CHANGED" > changed_files.txt
+
+      - name: 🔍 Detect Related Test Classes
+        id: detect-tests
+        run: |
+          TEST_CLASSES=""
+          while IFS= read -r FILE; do
+            if [[ "$FILE" == *".cls" || "$FILE" == *".trigger" ]]; then
+              NAME=$(basename "$FILE" | sed -E 's/\.(cls|trigger)//')
+              CANDIDATE="force-app/main/default/classes/${NAME}Test.cls"
+              if [[ -f "$CANDIDATE" ]]; then
+                TEST_CLASSES="${TEST_CLASSES},${NAME}Test"
+              fi
+            fi
+          done < changed_files.txt
+
+          # Fallback test class
+          if [ -z "$TEST_CLASSES" ]; then
+            TEST_CLASSES="DefaultTestClass"
+          else
+            TEST_CLASSES="${TEST_CLASSES#,}" # Remove leading comma
+          fi
+
+          echo "Detected Test Classes: $TEST_CLASSES"
+          echo "test_classes=$TEST_CLASSES" >> $GITHUB_OUTPUT
+
+      - name: ✅ Validate Only Changed Files
+        run: |
+          FILES=$(paste -sd, changed_files.txt)
+          if [ -z "$FILES" ]; then
+            echo "No metadata changes to validate."
+            exit 0
+          fi
+
+          echo "Running Tests: ${{ steps.detect-tests.outputs.test_classes }}"
           sfdx force:source:deploy \
-            -p force-app/main/default \
             -u prod \
             --checkonly \
-            --testlevel RunLocalTests \
-            --wait 30
+            --testlevel RunSpecifiedTests \
+            --runtests ${{ steps.detect-tests.outputs.test_classes }} \
+            --wait 30 \
+            -p $FILES
