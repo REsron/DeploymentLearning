@@ -101,30 +101,29 @@ jobs:
       - name: Validate delta (Run Specified Tests)
         if: ${{ env.APEX_TESTS != 'all' }}
         run: |
-          sf project deploy start \
+          sf project deploy validate \
             --source-dir "changed-sources/force-app" \
             --target-org prod \
-            --check-only \
             --test-level RunSpecifiedTests \
-            --runtests ${{ env.APEX_TESTS }} \
+            --tests ${{ env.APEX_TESTS }} \
             --json
 
       - name: Validate delta (Run All Local Tests)
         if: ${{ env.APEX_TESTS == 'all' }}
         run: |
-          sf project deploy start \
+          sf project deploy validate \
             --source-dir "changed-sources/force-app" \
             --target-org prod \
-            --check-only \
             --test-level RunLocalTests \
             --json
 
       - name: Deploy destructive changes (if any)
         run: |
           if [ -f "changed-sources/destructiveChanges/destructiveChanges.xml" ]; then
-            sfdx force:mdapi:deploy \
-              -d "changed-sources/destructiveChanges" \
+            sf project deploy validate \
+              --post-destructive-changes "changed-sources/destructiveChanges/destructiveChanges.xml" \
               --target-org prod \
-              --checkonly \
-              --ignorewarnings
+              --test-level RunLocalTests \
+              --ignore-warnings \
+              --json
           fi
