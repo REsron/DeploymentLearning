@@ -91,12 +91,11 @@ jobs:
         run: |
           cd changed-sources
           sf code-analyzer run \
-              --format sarif \
               --target './**/*.cls' \
               --rule-selector Recommended:Design \
               --rule-selector Recommended:BestPractices \
               --rule-selector Recommended:Performance \
-              --outfile 'apexScanResults.sarif'
+              --output-file 'apexScanResults.html'
           cd ..
 
       - name: Upload SARIF file
