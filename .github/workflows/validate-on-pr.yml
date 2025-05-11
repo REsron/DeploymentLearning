@@ -37,7 +37,7 @@ jobs:
 
       - name: Install SFDX Scanner
         run: |
-          sfdx plugins:install @salesforce/sfdx-scanner
+          sf plugins install code-analyzer
 
       - name: Authenticate with Salesforce (JWT)
         run: |
@@ -90,7 +90,13 @@ jobs:
       - name: Scan Apex Code
         run: |
           cd changed-sources
-          sfdx scanner:run --format sarif --target './**/*.cls' --category "Design,Best Practices,Performance" --outfile 'apexScanResults.sarif'
+          sf code-analyzer run \
+              --format sarif \
+              --target './**/*.cls' \
+              --rule-selector Recommended:Design \
+              --rule-selector Recommended:BestPractices \
+              --rule-selector Recommended:Performance \
+              --outfile 'apexScanResults.sarif'
           cd ..
 
       - name: Upload SARIF file
