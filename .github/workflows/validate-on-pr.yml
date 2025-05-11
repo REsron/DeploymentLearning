@@ -105,6 +105,11 @@ jobs:
           echo "  <version>59.0</version>" >> changed-sources/destructiveChanges/destructiveChanges.xml
           echo "</Package>" >> changed-sources/destructiveChanges/destructiveChanges.xml
 
+      - name: List files in changed-sources directory
+        run: |
+          echo "Listing files in changed-sources directory:"
+          find changed-sources
+          
       - name: Scan Apex Code
         run: |
           cd changed-sources
