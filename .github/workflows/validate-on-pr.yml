@@ -51,19 +51,17 @@ jobs:
 
       - name: Detect delta and generate destructiveChanges.xml
         run: |
-          # Create necessary directories for changed sources and destructive changes
           mkdir -p changed-sources/force-app
           mkdir -p changed-sources/destructiveChanges
-          
+
           echo '<?xml version="1.0" encoding="UTF-8"?>' > changed-sources/destructiveChanges/destructiveChanges.xml
           echo '<Package xmlns="http://soap.sforce.com/2006/04/metadata">' >> changed-sources/destructiveChanges/destructiveChanges.xml
-          
+
           declare -A deleted_types
-          
-          # Loop over the files changed in the PR
+
           while IFS=$'\t' read -r status file; do
             [[ "$file" != force-app/* ]] && continue
-          
+
             # Handle deleted files and generate the destructiveChanges.xml
             if [[ "$status" == "D" ]]; then
               base="${file##*/}"
@@ -79,32 +77,34 @@ jobs:
                 deleted_types["CustomPage"]+=$'\n        <members>'"${base%.page-meta.xml}"'</members>'
               elif [[ "$file" == force-app/main/default/aura/*/* ]]; then
                 # Handle Aura components (whole bundle)
-                component_folder=$(dirname "$file")
-                echo "Detected change in Aura component: $component_folder"
-                # Copy the entire folder (all files for the Aura component) to the changed-sources directory
-                cp -r "$component_folder" "changed-sources/$component_folder"
+                component_folder=$(echo "$file" | cut -d/ -f1-6)
+                deleted_types["AuraComponent"]+=$'\n        <members>'"${component_folder}"'</members>'
               elif [[ "$file" == force-app/main/default/lwc/*/* ]]; then
                 # Handle LWC components (whole bundle)
                 component_folder=$(echo "$file" | cut -d/ -f1-6)
-                echo "Detected change in LWC component: $component_folder"
-                # Copy the entire folder (all files for the LWC component) to the changed-sources directory
-                cp -r "$component_folder" "changed-sources/$component_folder"
+                deleted_types["LightningComponent"]+=$'\n        <members>'"${component_folder}"'</members>'
               fi
             else
               # Handle files that are modified or added (other than deletions)
-              if [[ "$file" == force-app/main/default/aura/*/* ]] || [[ "$file" == force-app/main/default/lwc/*/* ]]; then
-                # For LWC and Aura components, copy the entire folder
-                component_folder=$(dirname "$file")
-                echo "Detected change in component: $component_folder"
-                cp -r "$component_folder" "changed-sources/$component_folder"
+              if [[ "$file" == force-app/main/default/aura/* ]]; then
+                # For Aura components, copy the whole component folder
+                component_folder=$(echo "$file" | cut -d/ -f1-6)
+                mkdir -p "changed-sources/$component_folder"
+                cp -r "force-app/$component_folder" "changed-sources/$component_folder"
+              elif [[ "$file" == force-app/main/default/lwc/* ]]; then
+                # For LWC components, copy the whole component folder
+                component_folder=$(echo "$file" | cut -d/ -f1-6)
+                mkdir -p "changed-sources/$component_folder"
+                cp -r "force-app/$component_folder" "changed-sources/$component_folder"
               else
-                # For other types of files, copy individual files
-                mkdir -p "changed-sources/$(dirname "$file")"
-                cp "$file" "changed-sources/$file"
+                # For other files, ensure the parent directories exist before copying
+                dest_dir="changed-sources/$(dirname "$file")"
+                mkdir -p "$dest_dir"
+                cp "$file" "$dest_dir"
               fi
             fi
           done < <(git diff --name-status origin/main...HEAD)
-          
+
           # Add deleted types to destructiveChanges.xml
           for key in "${!deleted_types[@]}"; do
             echo "  <types>" >> changed-sources/destructiveChanges/destructiveChanges.xml
@@ -112,7 +112,7 @@ jobs:
             echo "    <name>$key</name>" >> changed-sources/destructiveChanges/destructiveChanges.xml
             echo "  </types>" >> changed-sources/destructiveChanges/destructiveChanges.xml
           done
-          
+
           # Closing the destructiveChanges.xml package
           echo "  <version>59.0</version>" >> changed-sources/destructiveChanges/destructiveChanges.xml
           echo "</Package>" >> changed-sources/destructiveChanges/destructiveChanges.xml
@@ -121,7 +121,7 @@ jobs:
         run: |
           echo "Listing files in changed-sources directory:"
           find changed-sources
-          
+
       - name: Scan Apex Code
         run: |
           cd changed-sources
@@ -156,17 +156,15 @@ jobs:
         run: |
           echo "Listing files in changed-sources/destructiveChanges directory:"
           ls -l changed-sources/destructiveChanges
-          
-          # Find and print non-XML files for debug
+
           non_xml_files=$(find changed-sources/destructiveChanges -type f ! -name "*.xml")
-          
+
           echo "Non-XML files detected:"
           echo "$non_xml_files"
-          
-          # Proceed only if any non-XML files exist
+
           if [ -n "$non_xml_files" ]; then
             echo "✅ Non-XML files found. Proceeding with destructive validation..."
-            
+
             sf project deploy validate \
               --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml \
               --manifest changed-sources/manifest/package.xml
