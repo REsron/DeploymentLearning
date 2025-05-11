@@ -37,7 +37,7 @@ jobs:
 
       - name: 'Installing sfdx git delta'
         run: |
-          echo y | sfdx plugins:install sfdx-git-delta
+          echo y | sf plugins install sfdx-git-delta@legacy
           sfdx plugins
 
       - name: 'Installing java'
