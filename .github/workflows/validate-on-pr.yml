@@ -98,11 +98,6 @@ jobs:
               --output-file 'apexScanResults.html'
           cd ..
 
-      - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v1
-        with:
-          sarif_file: changed-sources/apexScanResults.sarif
-
       - name: Validate delta (Run Specified Tests)
         if: ${{ env.APEX_TESTS != 'all' }}
         run: |
