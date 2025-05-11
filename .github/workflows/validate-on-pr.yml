@@ -103,6 +103,7 @@ jobs:
         run: |
           sf project deploy start \
             --source-dir "changed-sources/force-app" \
+            --target-org prod \
             --check-only \
             --test-level RunSpecifiedTests \
             --runtests ${{ env.APEX_TESTS }} \
@@ -113,6 +114,7 @@ jobs:
         run: |
           sf project deploy start \
             --source-dir "changed-sources/force-app" \
+            --target-org prod \
             --check-only \
             --test-level RunLocalTests \
             --json
@@ -122,6 +124,7 @@ jobs:
           if [ -f "changed-sources/destructiveChanges/destructiveChanges.xml" ]; then
             sfdx force:mdapi:deploy \
               -d "changed-sources/destructiveChanges" \
+              --target-org prod \
               --checkonly \
               --ignorewarnings
           fi
