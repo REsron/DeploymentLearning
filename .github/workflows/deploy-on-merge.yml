@@ -1,12 +1,12 @@
 name: Deploy on Merge
 
 on:
-  pull_request:
+  push:
     branches:
       - main
 
 jobs:
-  validate-deployment-on-develop-org:
+  Deploy_to_Production:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
 
