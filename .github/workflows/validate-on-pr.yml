@@ -144,17 +144,13 @@ jobs:
         run: |
           echo "Listing files in changed-sources directory:"
           ls -R changed-sources
-      
-          # Check if destructiveChanges.xml exists and if there are files inside destructiveChanges
-          if [ -f "changed-sources/destructiveChanges/destructiveChanges.xml" ] && [ "$(ls -A changed-sources/destructiveChanges)" ]; then
-            echo "Destructive changes detected. Deploying..."
-            sf project deploy validate \
-              --source-dir "changed-sources/force-app" \
-              --post-destructive-changes "changed-sources/destructiveChanges/destructiveChanges.xml" \
-              --target-org prod \
-              --test-level RunLocalTests \
-              --ignore-warnings \
-              --json
+          
+          # Check if there are any files other than destructiveChanges.xml in the changed-sources directory
+          if find changed-sources -type f ! -name "destructiveChanges.xml" | grep -q .; then
+            echo "Other files found. Proceeding with deployment..."
+            
+            # Deploy with the destructive changes file and other changes
+            sfdx force:source:deploy --manifest changed-sources/manifest/package.xml --post-destructive-changes "changed-sources/destructiveChanges/destructiveChanges.xml"
           else
-            echo "No destructive changes detected. Skipping deployment."
+            echo "No other relevant changes detected. Skipping deployment."
           fi
