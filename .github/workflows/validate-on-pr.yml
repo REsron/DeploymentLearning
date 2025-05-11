@@ -30,24 +30,24 @@ jobs:
           TESTS=$(cat testsToRun.txt)
           echo "APEX_TESTS=$TESTS" >> $GITHUB_ENV
 
-      - name: Install Salesforce CLI
+      - name: Install Salesforce CLI (sf)
         run: |
-          npm install --global sfdx-cli
-          sfdx version
+          npm install --global @salesforce/cli
+          sf version
 
-      - name: Install SFDX Scanner
+      - name: Install Code Analyzer Plugin
         run: |
-          sf plugins install code-analyzer
+          sf plugins install @salesforce/code-analyzer
 
       - name: Authenticate with Salesforce (JWT)
         run: |
           echo "${{ secrets.SF_JWT_KEY }}" > server.key
-          sfdx force:auth:jwt:grant \
-            --clientid ${{ secrets.SF_CLIENT_ID }} \
-            --jwtkeyfile server.key \
+          sf org login jwt \
+            --client-id ${{ secrets.SF_CLIENT_ID }} \
+            --jwt-key-file server.key \
             --username ${{ secrets.SF_HUB_USERNAME }} \
-            --instanceurl https://login.salesforce.com \
-            --setalias prod
+            --instance-url https://login.salesforce.com \
+            --alias prod
 
       - name: Detect delta and generate destructiveChanges.xml
         run: |
@@ -107,20 +107,20 @@ jobs:
       - name: Validate delta (Run Specified Tests)
         if: ${{ env.APEX_TESTS != 'all' }}
         run: |
-          sfdx force:source:deploy \
-            -p "changed-sources/force-app" \
-            --checkonly \
-            --testlevel RunSpecifiedTests \
+          sf project deploy start \
+            --source-dir "changed-sources/force-app" \
+            --check-only \
+            --test-level RunSpecifiedTests \
             --runtests ${{ env.APEX_TESTS }} \
             --json
 
       - name: Validate delta (Run All Local Tests)
         if: ${{ env.APEX_TESTS == 'all' }}
         run: |
-          sfdx force:source:deploy \
-            -p "changed-sources/force-app" \
-            --checkonly \
-            --testlevel RunLocalTests \
+          sf project deploy start \
+            --source-dir "changed-sources/force-app" \
+            --check-only \
+            --test-level RunLocalTests \
             --json
 
       - name: Deploy destructive changes (if any)
