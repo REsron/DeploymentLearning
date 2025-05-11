@@ -79,20 +79,10 @@ jobs:
                 # Handle Aura components (whole bundle)
                 component_folder=$(echo "$file" | cut -d/ -f1-6)
                 deleted_types["AuraComponent"]+=$'\n        <members>'"${component_folder}"'</members>'
-                echo "Detected change in Aura component: $component_folder"
-
-                # Copy the entire folder (all files for the Aura component) to the changed-sources directory
-
-                cp -r "$component_folder" "changed-sources/$component_folder"
               elif [[ "$file" == force-app/main/default/lwc/*/* ]]; then
                 # Handle LWC components (whole bundle)
                 component_folder=$(echo "$file" | cut -d/ -f1-6)
                 deleted_types["LightningComponent"]+=$'\n        <members>'"${component_folder}"'</members>'
-                echo "Detected change in LWC component: $component_folder"
-
-                # Copy the entire folder (all files for the LWC component) to the changed-sources directory
-
-                cp -r "$component_folder" "changed-sources/$component_folder"
               fi
             else
               # Handle files that are modified or added (other than deletions)
