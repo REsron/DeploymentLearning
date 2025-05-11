@@ -142,11 +142,19 @@ jobs:
 
       - name: Deploy destructive changes (if any)
         run: |
-          if [ -f "changed-sources/destructiveChanges/destructiveChanges.xml" ]; then
+          echo "Listing files in changed-sources directory:"
+          ls -R changed-sources
+      
+          # Check if destructiveChanges.xml exists and if there are files inside destructiveChanges
+          if [ -f "changed-sources/destructiveChanges/destructiveChanges.xml" ] && [ "$(ls -A changed-sources/destructiveChanges)" ]; then
+            echo "Destructive changes detected. Deploying..."
             sf project deploy validate \
+              --source-dir "changed-sources/force-app" \
               --post-destructive-changes "changed-sources/destructiveChanges/destructiveChanges.xml" \
               --target-org prod \
               --test-level RunLocalTests \
               --ignore-warnings \
               --json
+          else
+            echo "No destructive changes detected. Skipping deployment."
           fi
