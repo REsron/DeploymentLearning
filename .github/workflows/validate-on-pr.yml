@@ -37,7 +37,7 @@ jobs:
 
       - name: Install Code Analyzer Plugin
         run: |
-          sf plugins install @salesforce/code-analyzer
+          sf plugins install code-analyzer
 
       - name: Authenticate with Salesforce (JWT)
         run: |
