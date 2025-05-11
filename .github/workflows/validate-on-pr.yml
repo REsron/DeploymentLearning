@@ -65,11 +65,11 @@ jobs:
             if [[ "$status" == "D" ]]; then
               base="${file##*/}"
               if [[ "$file" == *.cls ]]; then
-                deleted_types["ApexClass"]+=$'\n        '<members>${base%.cls}</members>
+                deleted_types["ApexClass"]+=$'\n        <members>'"${base%.cls}"'</members>'
               elif [[ "$file" == *.trigger ]]; then
-                deleted_types["ApexTrigger"]+=$'\n        '<members>${base%.trigger}</members>
+                deleted_types["ApexTrigger"]+=$'\n        <members>'"${base%.trigger}"'</members>'
               elif [[ "$file" == *.object-meta.xml ]]; then
-                deleted_types["CustomObject"]+=$'\n        '<members>${base%.object-meta.xml}</members>
+                deleted_types["CustomObject"]+=$'\n        <members>'"${base%.object-meta.xml}"'</members>'
               fi
             else
               mkdir -p "changed-sources/$(dirname "$file")"
