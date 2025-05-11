@@ -16,12 +16,12 @@ jobs:
         with:
           node-version: '16'
 
-      - name: 'Checkout source code'
+      - name: Checkout source code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: 'Read PR Body'
+      - name: Read PR Body to detect test classes
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
@@ -30,26 +30,16 @@ jobs:
           TESTS=$(cat testsToRun.txt)
           echo "APEX_TESTS=$TESTS" >> $GITHUB_ENV
 
-      - name: 'Install Salesforce CLI via npm'
+      - name: Install Salesforce CLI
         run: |
           npm install --global sfdx-cli
           sfdx version
 
-      - name: 'Installing sfdx git delta'
-        run: |
-          echo y | sf plugins install sfdx-git-delta@legacy
-          sfdx plugins
-
-      - name: 'Installing java'
-        run: |
-          sudo apt-get update
-          sudo apt install default-jdk -y
-
-      - name: 'Installing SFDX scanner'
+      - name: Install SFDX Scanner
         run: |
           sfdx plugins:install @salesforce/sfdx-scanner
 
-      - name: 🔐 Authenticate with Salesforce (Prod Org)
+      - name: Authenticate with Salesforce (JWT)
         run: |
           echo "${{ secrets.SF_JWT_KEY }}" > server.key
           sfdx force:auth:jwt:grant \
@@ -59,12 +49,45 @@ jobs:
             --instanceurl https://login.salesforce.com \
             --setalias prod
 
-      - name: 'Create delta packages for new, modified or deleted metadata'
+      - name: Detect delta and generate destructiveChanges.xml
         run: |
-          mkdir changed-sources
-          sfdx sgd:source:delta --to "HEAD" --from "HEAD^" --output changed-sources/ --generate-delta --source force-app/
+          mkdir -p changed-sources/force-app
+          mkdir -p changed-sources/destructiveChanges
 
-      - name: 'Scan code'
+          echo '<?xml version="1.0" encoding="UTF-8"?>' > changed-sources/destructiveChanges/destructiveChanges.xml
+          echo '<Package xmlns="http://soap.sforce.com/2006/04/metadata">' >> changed-sources/destructiveChanges/destructiveChanges.xml
+
+          declare -A deleted_types
+
+          while IFS=$'\t' read -r status file; do
+            [[ "$file" != force-app/* ]] && continue
+
+            if [[ "$status" == "D" ]]; then
+              base="${file##*/}"
+              if [[ "$file" == *.cls ]]; then
+                deleted_types["ApexClass"]+=$'\n        '<members>${base%.cls}</members>
+              elif [[ "$file" == *.trigger ]]; then
+                deleted_types["ApexTrigger"]+=$'\n        '<members>${base%.trigger}</members>
+              elif [[ "$file" == *.object-meta.xml ]]; then
+                deleted_types["CustomObject"]+=$'\n        '<members>${base%.object-meta.xml}</members>
+              fi
+            else
+              mkdir -p "changed-sources/$(dirname "$file")"
+              cp "$file" "changed-sources/$file"
+            fi
+          done < <(git diff --name-status origin/main...HEAD)
+
+          for key in "${!deleted_types[@]}"; do
+            echo "  <types>" >> changed-sources/destructiveChanges/destructiveChanges.xml
+            echo "${deleted_types[$key]}" >> changed-sources/destructiveChanges/destructiveChanges.xml
+            echo "    <name>$key</name>" >> changed-sources/destructiveChanges/destructiveChanges.xml
+            echo "  </types>" >> changed-sources/destructiveChanges/destructiveChanges.xml
+          done
+
+          echo "  <version>59.0</version>" >> changed-sources/destructiveChanges/destructiveChanges.xml
+          echo "</Package>" >> changed-sources/destructiveChanges/destructiveChanges.xml
+
+      - name: Scan Apex Code
         run: |
           cd changed-sources
           sfdx scanner:run --format sarif --target './**/*.cls' --category "Design,Best Practices,Performance" --outfile 'apexScanResults.sarif'
@@ -75,17 +98,30 @@ jobs:
         with:
           sarif_file: changed-sources/apexScanResults.sarif
 
-      - name: 'Check-only deploy delta changes - run specified tests'
+      - name: Validate delta (Run Specified Tests)
         if: ${{ env.APEX_TESTS != 'all' }}
         run: |
-          echo ${{ env.APEX_TESTS }}
-          sfdx force:source:deploy -p "changed-sources/force-app" --checkonly --testlevel RunSpecifiedTests --runtests ${{ env.APEX_TESTS }} --json
+          sfdx force:source:deploy \
+            -p "changed-sources/force-app" \
+            --checkonly \
+            --testlevel RunSpecifiedTests \
+            --runtests ${{ env.APEX_TESTS }} \
+            --json
 
-      - name: 'Check-only deploy delta changes - run all tests'
+      - name: Validate delta (Run All Local Tests)
         if: ${{ env.APEX_TESTS == 'all' }}
         run: |
-          sfdx force:source:deploy -p "changed-sources/force-app" --checkonly --testlevel RunLocalTests --json
+          sfdx force:source:deploy \
+            -p "changed-sources/force-app" \
+            --checkonly \
+            --testlevel RunLocalTests \
+            --json
 
-      - name: 'Deploy destructive changes (if any)'
+      - name: Deploy destructive changes (if any)
         run: |
-          sfdx force:mdapi:deploy -d "changed-sources/destructiveChanges" --checkonly --ignorewarnings
+          if [ -f "changed-sources/destructiveChanges/destructiveChanges.xml" ]; then
+            sfdx force:mdapi:deploy \
+              -d "changed-sources/destructiveChanges" \
+              --checkonly \
+              --ignorewarnings
+          fi
