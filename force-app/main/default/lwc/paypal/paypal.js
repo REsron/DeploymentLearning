@@ -17,7 +17,7 @@ export default class Paypal extends LightningElement {
             });
     })
     .catch((error) => {
-        console.error("failed to load the PayPal JS SDK script", error);
+        console.error("failed to load the PayPal JS SDK scripta", error);
     });
 
   }
