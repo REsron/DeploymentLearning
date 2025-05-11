@@ -142,15 +142,22 @@ jobs:
 
       - name: Deploy destructive changes (if any)
         run: |
-          echo "Listing files in changed-sources directory:"
-          ls -R changed-sources
+          echo "Listing files in changed-sources/destructiveChanges directory:"
+          ls -l changed-sources/destructiveChanges
           
-          # Check if there are any files other than destructiveChanges.xml in the changed-sources directory
-          if find changed-sources -type f ! -name "destructiveChanges.xml" | grep -q .; then
-            echo "Other files found. Proceeding with deployment..."
+          # Find and print non-XML files for debug
+          non_xml_files=$(find changed-sources/destructiveChanges -type f ! -name "*.xml")
+          
+          echo "Non-XML files detected:"
+          echo "$non_xml_files"
+          
+          # Proceed only if any non-XML files exist
+          if [ -n "$non_xml_files" ]; then
+            echo "✅ Non-XML files found. Proceeding with destructive validation..."
             
-            # Deploy with the destructive changes file and other changes
-            sfdx force:source:deploy --manifest changed-sources/manifest/package.xml --post-destructive-changes "changed-sources/destructiveChanges/destructiveChanges.xml"
+            sf project deploy validate \
+              --post-destructive-changes changed-sources/destructiveChanges/destructiveChanges.xml \
+              --manifest changed-sources/manifest/package.xml
           else
-            echo "No other relevant changes detected. Skipping deployment."
+            echo "❌ No non-XML files found. Skipping destructive validation."
           fi
